@@ -1,0 +1,250 @@
+<!DOCTYPE HTML>
+<html>
+	<title> webgl tut </title>
+<head>
+    <title>Basic Breakdown of Three.js</title>
+    <style>
+        body {
+            padding:0;
+				margin:0;
+				overflow:hidden;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+			
+        }
+		
+}
+    </style>
+</head>
+<body>
+
+<script src="js/three.min.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/FresnelShader.js"></script>
+<script src="js/Projector.js"></script>
+<script src="js/Raycaster.js"></script>
+
+
+
+<script>
+
+var container, scene, camera, renderer, controls, stats,cameraPosition, cubeCamera;
+var mirror_mesh =new THREE.Mesh();
+
+var objects = [], plane;
+var raycaster = new THREE.Raycaster();
+// custom global variables
+
+
+var projector, mouse = { x: 0, y: 0 };
+function init() 
+{
+    scene = new THREE.Scene();
+	stats = new Stats();
+	var loader = new THREE.JSONLoader();
+	container;
+	container = document.createElement( 'div' );
+	document.body.appendChild( container );
+    // CAMERA
+	var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight;
+	var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 1, FAR = 1000000;
+	camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
+	camera.position.set(10000,20000,10000);
+	camera.lookAt(new THREE.Vector3(0,10000,0));
+	// RENDERER
+	renderer = new THREE.WebGLRenderer( { antialias: true } );
+	renderer.setPixelRatio( window.devicePixelRatio );
+	renderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
+	container.appendChild( renderer.domElement );
+	//renderer.gammaInput = true;
+	//renderer.gammaOutput = true;
+	//renderer.setClearColor(0xaabbff,1);
+	// STATS
+	stats.domElement.style.position = 'absolute';
+	stats.domElement.style.top = '0px';
+	stats.domElement.style.zIndex = 100;
+	container.appendChild( stats.domElement );
+	cubeCamera = new THREE.CubeCamera( 1, 20000, 1024 );
+	
+	cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipMapLinearFilter;
+	scene.add( cubeCamera );
+	var cubemat = new THREE.MeshBasicMaterial( { envMap: cubeCamera.renderTarget } );
+	
+	//skybox
+	var urlPrefix = "js/bathroom_tub/sky_";
+    var urls = [ urlPrefix + "0.jpg", urlPrefix + "1.jpg",
+    urlPrefix + "2.jpg", urlPrefix + "3.jpg",
+    urlPrefix + "4.jpg", urlPrefix + "5.jpg" ];
+    var cubemap = THREE.ImageUtils.loadTextureCube( urls, THREE.CubeReflectionMapping );
+    cubemap.format = THREE.RGBFormat;
+	var path = "js/clearsky2/";
+    var sides = [ path + 'px.jpg', path + 'nx.jpg', path + 'py.jpg', path + 'ny.jpg', path + 'pz.jpg', path + 'nz.jpg' ];
+
+     // load images
+	var scCube = THREE.ImageUtils.loadTextureCube(sides);
+	scCube.format = THREE.RGBFormat;
+
+	// prepare skybox material (shader)
+	var skyShader = THREE.ShaderLib["cube"];
+	skyShader.uniforms["tCube"].value = scCube;
+	var skyMaterial = new THREE.ShaderMaterial( {
+	  fragmentShader: skyShader.fragmentShader, vertexShader: skyShader.vertexShader,
+	  uniforms: skyShader.uniforms, depthWrite: false, side: THREE.BackSide
+	});
+
+	// create Mesh with cube geometry and add to the scene
+	var skyBox = new THREE.Mesh(new THREE.CubeGeometry(100000,100000,100000), skyMaterial);
+	skyMaterial.needsUpdate = true;
+
+	scene.add(skyBox);
+    
+	// CONTROLS
+	controls = new THREE.OrbitControls( camera, renderer.domElement );
+	
+	// bathtub
+	//addbathtub();
+	
+	// initialize object to perform world/screen calculations
+	projector = new THREE.Projector();
+	//projector = new THREE.Projector();
+	mouseVector = new THREE.Vector3();
+	// when the mouse moves, call the given function
+	//document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+
+	
+	var bathroom_washbasin = THREE.ImageUtils.loadTexture('js/bathroom_tub/bathroom_washbasin.png');
+	
+	var wc = THREE.ImageUtils.loadTexture('js/bathroom_tub/wc.jpg');
+	var sink = THREE.ImageUtils.loadTexture('js/bathroom_tub/sink.jpg');
+	var bathtub = THREE.ImageUtils.loadTexture('js/bathroom_tub/bathtub.jpg');
+	var tap = THREE.ImageUtils.loadTexture('js/bathroom_tub/tap.jpg');
+	var vanity1 = THREE.ImageUtils.loadTexture('js/bathroom_tub/vanity1.jpg');
+	var carpet = THREE.ImageUtils.loadTexture('js/bathroom_tub/carpet.jpg');
+	var walls = THREE.ImageUtils.loadTexture('js/bathroom_tub/walls.jpg');
+	var walls2 = THREE.ImageUtils.loadTexture('js/bathroom_tub/walls2.jpg');
+	
+	
+
+	
+	var axisHelper = new THREE.AxisHelper( 300); 
+	//scene.add( axisHelper );
+
+	
+	//tap
+	loader.load('js/bathroom_tub/tap.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = tap;
+	//material.envMap= cubemap;
+	
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	tap_mesh = new THREE.Mesh( geometry, material );
+	scene.add( tap_mesh );		
+	});
+	//window1
+	loader.load('js/bathroom_tub/window1.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = window1;
+	//material.envMap= cubemap;
+	
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	window1_mesh = new THREE.Mesh( geometry, material );
+	scene.add( window1_mesh );		
+	});
+	//walls
+	loader.load('js/bathroom_tub/walls.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = walls;
+	//material.envMap= cubemap;
+	
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	walls_mesh = new THREE.Mesh( geometry, material );
+	scene.add( walls_mesh );		
+	});
+	//walls2
+	loader.load('js/bathroom_tub/walls2.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = walls2;
+	//material.envMap= cubemap;
+	
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	walls2_mesh = new THREE.Mesh( geometry, material );
+	scene.add( walls2_mesh );		
+	});
+	//carpet
+	loader.load('js/bathroom_tub/carpet.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = carpet;
+	//material.envMap= cubemap;
+	
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	carpet_mesh = new THREE.Mesh( geometry, material );
+	scene.add( carpet_mesh );		
+	});
+	//bathroom_washbasin
+	loader.load('js/bathroom_tub/bathroom_washbasin.json', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = bathroom_washbasin;
+	//material.envMap= cubemap;
+	
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	bathroom_washbasinm = new THREE.Mesh( geometry, material );
+	scene.add( bathroom_washbasinm );		
+	});
+	//bathtub
+	loader.load('js/bathroom_tub/bathtub.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = bathtub;
+	//material.envMap= cubemap;
+	
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	bathtub_mesh = new THREE.Mesh( geometry, material );
+	scene.add( bathtub_mesh );		
+	});
+	
+
+	//sink
+	loader.load('js/bathroom_tub/sink.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = sink;
+	material.overdraw=true;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	sink_mesh = new THREE.Mesh( geometry, material );
+	scene.add( sink_mesh );		
+	});
+	//vanity1
+	loader.load('js/bathroom_tub/vanity1.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = vanity1;
+	material.overdraw=true;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	vanity1_mesh = new THREE.Mesh( geometry, material );
+	scene.add( vanity1_mesh );		
+	});
+	
+	
+}
+
+function animate() 
+{
+	console.log("tick tick");
+    requestAnimationFrame( animate );
+	render();
+}
+
+init();
+animate();
+
+function render(){
+	mirror_mesh.visible = false;
+	cubeCamera.updateCubeMap( renderer, scene );
+		mirror_mesh.visible = true;
+	renderer.render( scene, camera );
+}
+    
+</script>
+</body>
+</html>
