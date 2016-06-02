@@ -51,7 +51,7 @@ function init()
 	document.body.appendChild( container );
     // CAMERA
 	var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight;
-	var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 1, FAR = 1000000;
+	var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 10, FAR = 1000000;
 	camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
 	camera.position.set(100,100,0);
 	camera.lookAt(scene.position);
@@ -59,6 +59,7 @@ function init()
 	renderer = new THREE.WebGLRenderer( { antialias: true } );
 	renderer.setPixelRatio( window.devicePixelRatio );
 	renderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
+	renderer.logarithmicDepthBuffer=true;
 	container.appendChild( renderer.domElement );
 	//renderer.gammaInput = true;
 	//renderer.gammaOutput = true;
